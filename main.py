@@ -149,64 +149,67 @@ if __name__ == "__main__":
       if not detectedBarcodes:
           pass
       else:
-            # Traverse through all the detected barcodes in image
-            barcode = detectedBarcodes[0]
-            
-              # Locate the barcode position in image
-            (x, y, w, h) = barcode.rect
-            
-            # Put the rectangle in image using
-            # cv2 to heighlight the barcode
-            cv2.rectangle(image_np, (x-10, y-10),
-                        (x + w+10, y + h+10),
-                        (255, 0, 0), 2)
-            
-            if barcode.data!="":
-            
-            # Print the barcode data
-                # print(str(barcode.data))
-                idnum = str(barcode.data)[2:-1]
-                print(idnum)
-                time.sleep(2)
-                now = datetime.now()
+        # Traverse through all the detected barcodes in image
+        barcode = detectedBarcodes[0]
+        
+          # Locate the barcode position in image
+        (x, y, w, h) = barcode.rect
+        
+        # Put the rectangle in image using
+        # cv2 to heighlight the barcode
+        cv2.rectangle(image_np, (x-10, y-10),
+                    (x + w+10, y + h+10),
+                    (255, 0, 0), 2)
+        
+        if barcode.data!="":
+        
+        # Print the barcode data
+            # print(str(barcode.data))
+            idnum = str(barcode.data)[2:-1]
+            print(idnum)
+            time.sleep(2)
+            now = datetime.now()
 
-                current_time = now.strftime("%H:%M:%S")
-                print(current_time)
-                checkedIn = False
-                for i in range(len(data)):
-                  if data[i]['ID'] == int(idnum):
-                    checkedIn = True
-                if not checkedIn:
-                  x = dt.weekday()
-                  days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-                  data.append({'ID': int(idnum), 'Name': ids[idnum], 'Start': 0, 'End': 0, 'Total': 0, 'Day': days[x]})
-                for i in range(len(data)):
-                  if data[i]['ID'] == int(idnum):
-                    ind = i
-                    sound = pygame.mixer.Sound("sound.wav")
-                    pygame.mixer.Sound.play(sound)
-                    pygame.mixer.music.stop()
-                
-                if data[ind]['Start'] != 0:
-                  startTime = data[ind]['Start']
-                  startTime = datetime.strptime(startTime, "%H:%M:%S")
-                  current_time = datetime.strptime(current_time, "%H:%M:%S")
-                  timeSpent = current_time - startTime
-                  secondsSpent = int(timeSpent.total_seconds())
-                  print(secondsSpent)
-                
-                  if secondsSpent < 10:
-                    print('cant sign out too little time')
-                  else:
-                    print('goodbye')
-                    data[ind]['End'] = current_time.strftime("%H:%M:%S")
-                    formattedTimeSpent = str(timedelta(seconds=secondsSpent))
-                    data[ind]['Total'] = formattedTimeSpent
+            current_time = now.strftime("%H:%M:%S")
+            print(current_time)
+            checkedIn = False
+            for i in range(len(data)):
+              if data[i]['ID'] == int(idnum):
+                checkedIn = True
+            if not checkedIn:
+              x = dt.weekday()
+              days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+              data.append({'ID': int(idnum), 'Name': ids[idnum], 'Start': 0, 'End': 0, 'Total': 0, 'Day': days[x]})
+            for i in range(len(data)):
+              if data[i]['ID'] == int(idnum):
+                ind = i
+            
+            if data[ind]['Start'] != 0:
+              startTime = data[ind]['Start']
+              startTime = datetime.strptime(startTime, "%H:%M:%S")
+              current_time = datetime.strptime(current_time, "%H:%M:%S")
+              timeSpent = current_time - startTime
+              secondsSpent = int(timeSpent.total_seconds())
+              print(secondsSpent)
+            
+              if secondsSpent < 600:
+                print('cant sign out too little time')
+              else:
+                sound = pygame.mixer.Sound("sound.wav")
+                pygame.mixer.Sound.play(sound)
+                pygame.mixer.music.stop()
+                print('goodbye')
+                data[ind]['End'] = current_time.strftime("%H:%M:%S")
+                formattedTimeSpent = str(timedelta(seconds=secondsSpent))
+                data[ind]['Total'] = formattedTimeSpent
 
-                else:
-                  data[ind]['Start'] = current_time
-                  print('welcome student #', idnum)
-                print('current students', data)
+            else:
+              data[ind]['Start'] = current_time
+              print('welcome student #', idnum)
+              sound = pygame.mixer.Sound("sound.wav")
+              pygame.mixer.Sound.play(sound)
+              pygame.mixer.music.stop()
+            print('current students', data)
       cv2.imshow('object detection', image_np)
 
       if cv2.waitKey(1) & 0xFF == ord('q'):
