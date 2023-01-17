@@ -1,12 +1,16 @@
-# This Python file uses the following encoding: utf-8
+
+# ccaroboticselective@gmail.com
+# RoboticsCheckIn123$
 import sys
+import numpy as np
 import os
 import time
+import PyQt5.sip
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QApplication, QDialog, QSizePolicy, QGridLayout, QPushButton, QMainWindow
 from PyQt5.uic import loadUi
 import json
-import numpy as np
+import numpy as np5
 from pyzbar.pyzbar import decode
 from datetime import datetime, timedelta
 from datetime import date
@@ -15,7 +19,21 @@ import pygame
 import csv
 import cv2
 from filestack import Client
+import _tkinter
+import matplotlib.pyplot as plt
+fig = plt.figure()
+# assert 'QTAgg' in fig.canvas.__class__.__name__
+
 pygame.init()
+def resource_path(relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
 class CheckIn(QMainWindow):
     people = ""
     csv_columns = ['ID','Name','Start', 'End', 'Total', 'Day']
@@ -35,7 +53,7 @@ class CheckIn(QMainWindow):
 
     def __init__(self):
         super(CheckIn, self).__init__()
-        loadUi('signinUI.ui', self)
+        loadUi(resource_path('signinUI.ui'), self)
         self.camera.clicked.connect(self.checkinCam)
         self.save.clicked.connect(self.saveFile)
         self.submit.clicked.connect(self.checkinNum)
@@ -44,7 +62,16 @@ class CheckIn(QMainWindow):
         dt = datetime.now()
         x = dt.weekday()
         print('it worked')
-        cap = cv2.VideoCapture(0)
+        for i in range(100):
+            try:
+                cap = cv2.VideoCapture(i)
+                break
+            except:
+                if i >= 99:
+                    print('no camera found')
+                    return
+                continue
+                
         while True:
             print('hi')
             ret, frame = cap.read()
@@ -102,8 +129,14 @@ class CheckIn(QMainWindow):
 
                         if secondsSpent < 600:
                             print('cant sign out too little time')
+                            sound = pygame.mixer.Sound(resource_path("wrong.mp3"))
+                            pygame.mixer.Sound.play(sound)
+                            pygame.mixer.music.stop()
+                            cap.release()
+                            cv2.destroyAllWindows()
+                            return
                         else:
-                            sound = pygame.mixer.Sound("sound.wav")
+                            sound = pygame.mixer.Sound(resource_path("sound.wav"))
                             pygame.mixer.Sound.play(sound)
                             pygame.mixer.music.stop()
                             print('goodbye')
@@ -114,7 +147,7 @@ class CheckIn(QMainWindow):
                             cv2.destroyAllWindows()
                             return
                     else:
-                        sound = pygame.mixer.Sound("sound.wav")
+                        sound = pygame.mixer.Sound(resource_path("sound.wav"))
                         pygame.mixer.Sound.play(sound)
                         pygame.mixer.music.stop()
                         self.data[ind]['Start'] = current_time
@@ -171,8 +204,11 @@ class CheckIn(QMainWindow):
 
                 if secondsSpent < 600:
                     print('cant sign out too little time')
+                    sound = pygame.mixer.Sound(resource_path("wrong.mp3"))
+                    pygame.mixer.Sound.play(sound)
+                    pygame.mixer.music.stop()
                 else:
-                    sound = pygame.mixer.Sound("sound.wav")
+                    sound = pygame.mixer.Sound(resource_path("sound.wav"))
                     pygame.mixer.Sound.play(sound)
                     pygame.mixer.music.stop()
                     print('goodbye')
@@ -181,7 +217,7 @@ class CheckIn(QMainWindow):
                     self.data[ind]['Total'] = formattedTimeSpent
                     
             else:
-                sound = pygame.mixer.Sound("sound.wav")
+                sound = pygame.mixer.Sound(resource_path("sound.wav"))
                 pygame.mixer.Sound.play(sound)
                 pygame.mixer.music.stop()
                 self.data[ind]['Start'] = current_time
@@ -194,14 +230,20 @@ class CheckIn(QMainWindow):
         x = dt.weekday()
 
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        if days[x] == 'Friday':
-            csv_file = 'week starting ' + days[x] + " " + str(dt.date()) + '.csv'
+        if days[x] == 'Tuesday':
+            csv_file = 'week ending ' + days[x] + " " + str(dt.date()) + '.csv'
             try:
                 with open(csv_file, 'w') as csvfile:
                     writer = csv.DictWriter(csvfile, fieldnames=self.csv_columns)
                     writer.writeheader()
                     for datas in self.data:
                         writer.writerow(datas)
+                with open('files.json', 'r+') as f:
+                    dataFiles = json.load(f)
+                    dataFiles['files'].append(csv_file)
+                    f.seek(0)        
+                    json.dump(dataFiles, f, indent=4)
+                    f.truncate() 
                 filelnk = self.c.upload(filepath = csv_file)
                 exit()
                 # need to update json
@@ -212,6 +254,8 @@ class CheckIn(QMainWindow):
             prev_file = csv.reader(open(self.files[-1]))
             prev_data = []
             for row in prev_file:
+                if len(row) != 6:
+                    continue
                 prev_data.append({'ID': row[0], 'Name': row[1], 'Start': row[2], 'End': row[3], 'Total': row[4], 'Day': row[5]})
             prev_data = prev_data[1:]
             totalData = prev_data + self.data
